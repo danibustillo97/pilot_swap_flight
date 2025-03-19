@@ -1,6 +1,6 @@
 // components/SwapCasesList.tsx
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Tabs,
@@ -12,6 +12,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  CircularProgress,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -31,154 +32,6 @@ interface SwapCase {
   status: 'open' | 'closed';
 }
 
-// Datos de prueba simulados (10 casos)
-// Algunos casos cerrados tienen fechas recientes (dentro de los últimos 30 días) y otros antiguos (para historial).
-const sampleCases: SwapCase[] = [
-  {
-    id: '1',
-    pilotRequesterId: '12345',
-    pilotSwapId: '67890',
-    flightNumber: 'AA123',
-    flightDate: '2025-04-20',
-    routeIATA: 'SDQ-KIN-SDQ',
-    approvalStages: [true, false, false],
-    createdAt: '2025-04-15T10:00:00Z',
-    status: 'open',
-  },
-  {
-    id: '2',
-    pilotRequesterId: '54321',
-    pilotSwapId: '09876',
-    flightNumber: 'BB456',
-    flightDate: '2025-04-21',
-    routeIATA: 'KIN-SDQ-KIN',
-    approvalStages: [true, true, true],
-    createdAt: '2025-03-20T09:00:00Z',
-    closedAt: '2025-04-05T12:00:00Z', // Cerrado reciente
-    status: 'closed',
-  },
-  {
-    id: '3',
-    pilotRequesterId: '11111',
-    pilotSwapId: '22222',
-    flightNumber: 'CC789',
-    flightDate: '2025-04-22',
-    routeIATA: 'SDQ-KIN-SDQ',
-    approvalStages: [true, true, false],
-    createdAt: '2025-02-10T11:00:00Z',
-    closedAt: '2025-04-03T15:00:00Z', // Cerrado reciente
-    status: 'closed',
-  },
-  {
-    id: '4',
-    pilotRequesterId: '33333',
-    pilotSwapId: '44444',
-    flightNumber: 'DD101',
-    flightDate: '2025-05-01',
-    routeIATA: 'NYC-LAX-NYC',
-    approvalStages: [false, false, false],
-    createdAt: '2025-04-25T08:00:00Z',
-    status: 'open',
-  },
-  {
-    id: '5',
-    pilotRequesterId: '55555',
-    pilotSwapId: '66666',
-    flightNumber: 'EE202',
-    flightDate: '2025-04-25',
-    routeIATA: 'LAX-SFO-LAX',
-    approvalStages: [true, true, true],
-    createdAt: '2025-04-20T07:00:00Z',
-    closedAt: '2025-04-08T10:00:00Z', // Cerrado reciente
-    status: 'closed',
-  },
-  {
-    id: '6',
-    pilotRequesterId: '77777',
-    pilotSwapId: '88888',
-    flightNumber: 'FF303',
-    flightDate: '2025-04-18',
-    routeIATA: 'CHI-MIA-CHI',
-    approvalStages: [true, false, false],
-    createdAt: '2025-04-15T11:00:00Z',
-    status: 'open',
-  },
-  {
-    id: '7',
-    pilotRequesterId: '99999',
-    pilotSwapId: '10101',
-    flightNumber: 'GG404',
-    flightDate: '2025-03-15',
-    routeIATA: 'LON-PAR-LON',
-    approvalStages: [true, true, true],
-    createdAt: '2025-03-10T10:00:00Z',
-    closedAt: '2022-03-16T14:00:00Z', // Histórico
-    status: 'closed',
-  },
-  {
-    id: '8',
-    pilotRequesterId: '12121',
-    pilotSwapId: '13131',
-    flightNumber: 'HH505',
-    flightDate: '2025-02-20',
-    routeIATA: 'BER-MAD-BER',
-    approvalStages: [true, true, true],
-    createdAt: '2025-02-15T09:00:00Z',
-    closedAt: '2022-02-21T16:00:00Z', // Histórico
-    status: 'closed',
-  },
-  {
-    id: '9',
-    pilotRequesterId: '14141',
-    pilotSwapId: '15151',
-    flightNumber: 'II606',
-    flightDate: '2025-05-05',
-    routeIATA: 'SYD-AKL-SYD',
-    approvalStages: [true, false, false],
-    createdAt: '2025-04-30T08:00:00Z',
-    status: 'open',
-  },
-  {
-    id: '10',
-    pilotRequesterId: '16161',
-    pilotSwapId: '17171',
-    flightNumber: 'JJ707',
-    flightDate: '2025-04-10',
-    routeIATA: 'TOK-SEO-TOK',
-    approvalStages: [true, true, false],
-    createdAt: '2025-04-05T10:00:00Z',
-    closedAt: '2025-04-09T12:00:00Z', // Cerrado reciente
-    status: 'closed',
-  },
-];
-
-// Componente para la barra de aprobación
-const ApprovalProgress: React.FC<{ stages: boolean[] }> = ({ stages }) => (
-  <Box display="flex" alignItems="center">
-    {stages.map((approved, index) => (
-      <Box key={index} display="flex" alignItems="center">
-        {approved ? (
-          <CheckCircleIcon sx={{ fontSize: '1.5rem', color: '#4a286f' }} />
-        ) : (
-          <RadioButtonUncheckedIcon sx={{ fontSize: '1.5rem', color: 'gray' }} />
-        )}
-        {index < stages.length - 1 && (
-          <Box
-            sx={{
-              width: 40,
-              height: 3,
-              backgroundColor: 'lightgray',
-              mx: 1,
-              borderRadius: 1,
-            }}
-          />
-        )}
-      </Box>
-    ))}
-  </Box>
-);
-
-// Componente de filtros (sin título)
 const FilterBar: React.FC<{
   filterRoute: string;
   setFilterRoute: (value: string) => void;
@@ -224,18 +77,77 @@ const FilterBar: React.FC<{
   </Paper>
 );
 
+const ApprovalProgress: React.FC<{ stages: boolean[] }> = ({ stages }) => (
+  <Box display="flex" alignItems="center">
+    {stages.map((approved, index) => (
+      <Box key={index} display="flex" alignItems="center">
+        {approved ? (
+          <CheckCircleIcon sx={{ fontSize: '1.5rem', color: '#4a286f' }} />
+        ) : (
+          <RadioButtonUncheckedIcon sx={{ fontSize: '1.5rem', color: 'gray' }} />
+        )}
+        {index < stages.length - 1 && (
+          <Box
+            sx={{
+              width: 40,
+              height: 3,
+              backgroundColor: 'lightgray',
+              mx: 1,
+              borderRadius: 1,
+            }}
+          />
+        )}
+      </Box>
+    ))}
+  </Box>
+);
+
 const SwapCasesList: React.FC = () => {
   const [tab, setTab] = useState<number>(0);
   const [filterRoute, setFilterRoute] = useState<string>('');
   const [filterStart, setFilterStart] = useState<string>('');
   const [filterEnd, setFilterEnd] = useState<string>('');
+  const [casesData, setCasesData] = useState<SwapCase[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTab(newValue);
   };
 
-  // Aplicar filtros
-  const filteredCases = sampleCases.filter(c => {
+  useEffect(() => {
+    const fetchCases = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/cases/cases');
+        if (!response.ok) {
+          throw new Error('Error fetching cases');
+        }
+        const data = await response.json();
+        // Mapear la data recibida de la API a nuestro formato SwapCase
+        const mappedData = data.map((item: any) => ({
+          id: item.request_id,
+          pilotRequesterId: item.requesting_pilot_name.trim(),
+          pilotSwapId: item.target_pilot_name.trim(),
+          flightNumber: String(item.flight_number),
+          flightDate: item.flight_date, // se asume formato yyyy-MM-dd
+          routeIATA: `${item.departure_airport}-${item.arrival_airport}`,
+          // Como no tenemos detalle de las etapas, se asigna un arreglo dummy:
+          approvalStages: item.status === "0" ? [false, false, false] : [true, true, true],
+          createdAt: item.created_at,
+          closedAt: item.status === "0" ? undefined : item.updated_at,
+          status: item.status === "0" ? 'open' : 'closed',
+        }));
+        setCasesData(mappedData);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCases();
+  }, []);
+
+  const filteredCases = casesData.filter(c => {
     if (filterRoute && !c.routeIATA.toLowerCase().includes(filterRoute.toLowerCase())) {
       return false;
     }
@@ -345,7 +257,6 @@ const SwapCasesList: React.FC = () => {
 
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', mt: 6, p: 2 }}>
-      {/* Barra de filtros */}
       <FilterBar
         filterRoute={filterRoute}
         setFilterRoute={setFilterRoute}
@@ -354,7 +265,6 @@ const SwapCasesList: React.FC = () => {
         filterEnd={filterEnd}
         setFilterEnd={setFilterEnd}
       />
-      {/* Tabs */}
       <Paper sx={{ p: 2, mb: 4, borderRadius: 2, boxShadow: 3 }}>
         <Tabs
           value={tab}
@@ -368,50 +278,56 @@ const SwapCasesList: React.FC = () => {
           <Tab label="Historial" />
         </Tabs>
       </Paper>
-      {/* Lista de Casos */}
-      <Box>
-        {tab === 0 && (
-          <Box>
-            {openCases.length > 0 ? (
-              openCases.map(renderCaseItem)
-            ) : (
-              <Typography align="center" variant="body1" color="text.secondary">
-                No hay casos abiertos.
-              </Typography>
-            )}
-          </Box>
-        )}
-        {tab === 1 && (
-          <Box>
-            {closedCasesRecent.length > 0 ? (
-              closedCasesRecent.map(renderCaseItem)
-            ) : (
-              <Typography align="center" variant="body1" color="text.secondary">
-                No hay casos cerrados en el último mes.
-              </Typography>
-            )}
-          </Box>
-        )}
-        {tab === 2 && (
-          <Box>
-            {historyCases.length > 0 ? (
-              <>
-                <Typography variant="h6" sx={{ mb: 2, color: '#4a286f' }}>
-                  Historial de Casos ({historyCases.length})
+
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <Box>
+          {tab === 0 && (
+            <Box>
+              {openCases.length > 0 ? (
+                openCases.map(renderCaseItem)
+              ) : (
+                <Typography align="center" variant="body1" color="text.secondary">
+                  No hay casos abiertos.
                 </Typography>
-                {historyCases.map(renderCaseItem)}
-                <Typography variant="body2" align="center" color="text.secondary" sx={{ mt: 2 }}>
-                  Estos casos fueron cerrados hace más de 30 días.
+              )}
+            </Box>
+          )}
+          {tab === 1 && (
+            <Box>
+              {closedCasesRecent.length > 0 ? (
+                closedCasesRecent.map(renderCaseItem)
+              ) : (
+                <Typography align="center" variant="body1" color="text.secondary">
+                  No hay casos cerrados en el último mes.
                 </Typography>
-              </>
-            ) : (
-              <Typography align="center" variant="body1" color="text.secondary">
-                No hay casos en el historial.
-              </Typography>
-            )}
-          </Box>
-        )}
-      </Box>
+              )}
+            </Box>
+          )}
+          {tab === 2 && (
+            <Box>
+              {historyCases.length > 0 ? (
+                <>
+                  <Typography variant="h6" sx={{ mb: 2, color: '#4a286f' }}>
+                    Historial de Casos ({historyCases.length})
+                  </Typography>
+                  {historyCases.map(renderCaseItem)}
+                  <Typography variant="body2" align="center" color="text.secondary" sx={{ mt: 2 }}>
+                    Estos casos fueron cerrados hace más de 30 días.
+                  </Typography>
+                </>
+              ) : (
+                <Typography align="center" variant="body1" color="text.secondary">
+                  No hay casos en el historial.
+                </Typography>
+              )}
+            </Box>
+          )}
+        </Box>
+      )}
     </Box>
   );
 };
